@@ -3,247 +3,583 @@
 <html lang="pt-BR">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>ESP32 - Monitor de Água</title>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>ESP-MAX | Monitoramento</title>
+
+    <!-- Biblioteca MQTT -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
 
     <style>
+
+        /* =====================================================
+           CONFIGURAÇÕES GERAIS
+        ===================================================== */
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: Arial, Helvetica, sans-serif;
         }
+
 
         body {
-            background: #0f172a;
-            color: white;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
             min-height: 100vh;
-            padding: 30px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #0f172a,
+                    #1e293b
+                );
+
+            color: white;
+
+            padding: 25px;
+
         }
+
+
+        /* =====================================================
+           CONTAINER
+        ===================================================== */
 
         .container {
-            max-width: 1000px;
+
+            max-width: 1100px;
+
             margin: auto;
+
         }
+
+
+        /* =====================================================
+           CABEÇALHO
+        ===================================================== */
 
         header {
+
             text-align: center;
+
             margin-bottom: 30px;
+
         }
+
 
         header h1 {
-            font-size: 32px;
+
+            font-size: 38px;
+
             margin-bottom: 8px;
+
         }
+
 
         header p {
+
             color: #94a3b8;
+
+            font-size: 17px;
+
         }
 
-        /* STATUS MQTT */
 
-        .connection {
-            background: #1e293b;
-            border-radius: 15px;
-            padding: 15px 20px;
-            margin-bottom: 25px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+        /* =====================================================
+           CONEXÃO
+        ===================================================== */
 
-        .connection-status {
+        .conexao {
+
             display: flex;
+
             align-items: center;
+
+            justify-content: center;
+
             gap: 10px;
+
+            margin-top: 18px;
+
         }
 
-        .status-dot {
-            width: 13px;
-            height: 13px;
-            background: #ef4444;
+
+        .bolinha {
+
+            width: 15px;
+
+            height: 15px;
+
             border-radius: 50%;
+
+            background: #ef4444;
+
+            box-shadow:
+                0 0 12px #ef4444;
+
         }
 
-        .status-dot.connected {
+
+        .bolinha.online {
+
             background: #22c55e;
+
+            box-shadow:
+                0 0 15px #22c55e;
+
         }
 
-        /* CARDS */
 
-        .cards {
+        /* =====================================================
+           GRID
+        ===================================================== */
+
+        .grid {
+
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+
+            grid-template-columns:
+                repeat(
+                    auto-fit,
+                    minmax(280px, 1fr)
+                );
+
             gap: 20px;
-            margin-bottom: 25px;
+
         }
+
+
+        /* =====================================================
+           CARD
+        ===================================================== */
 
         .card {
-            background: #1e293b;
-            border-radius: 18px;
+
+            background: #111827;
+
+            border:
+                1px solid
+                #334155;
+
+            border-radius: 20px;
+
             padding: 25px;
-            text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+
+            box-shadow:
+                0 15px 35px
+                rgba(0,0,0,0.3);
+
         }
+
 
         .card h2 {
-            font-size: 17px;
-            color: #94a3b8;
-            margin-bottom: 15px;
+
+            font-size: 20px;
+
+            margin-bottom: 20px;
+
+            color: #e2e8f0;
+
         }
 
-        .value {
-            font-size: 42px;
-            font-weight: bold;
-        }
 
-        .unit {
-            color: #94a3b8;
-            font-size: 18px;
-        }
+        /* =====================================================
+           DISTÂNCIA
+        ===================================================== */
 
-        /* BARRA */
+        .distancia {
 
-        .level-card {
-            background: #1e293b;
-            padding: 25px;
-            border-radius: 18px;
-            margin-bottom: 25px;
-        }
-
-        .level-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
-
-        .progress {
-            width: 100%;
-            height: 28px;
-            background: #334155;
-            border-radius: 20px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            width: 0%;
-            background: #22c55e;
-            border-radius: 20px;
-            transition: width 0.5s ease;
-        }
-
-        /* LED */
-
-        .led-card {
-            background: #1e293b;
-            padding: 30px;
-            border-radius: 18px;
             text-align: center;
-            margin-bottom: 25px;
+
         }
+
+
+        .valor-distancia {
+
+            font-size: 55px;
+
+            font-weight: bold;
+
+        }
+
+
+        .unidade {
+
+            font-size: 20px;
+
+            color: #94a3b8;
+
+        }
+
+
+        /* =====================================================
+           NÍVEL
+        ===================================================== */
+
+        .nivel {
+
+            text-align: center;
+
+        }
+
+
+        .valor-nivel {
+
+            font-size: 60px;
+
+            font-weight: bold;
+
+            margin-bottom: 15px;
+
+        }
+
+
+        /* =====================================================
+           BARRA
+        ===================================================== */
+
+        .barra-container {
+
+            width: 100%;
+
+            height: 35px;
+
+            background: #374151;
+
+            border-radius: 20px;
+
+            overflow: hidden;
+
+        }
+
+
+        .barra {
+
+            height: 100%;
+
+            width: 0%;
+
+            border-radius: 20px;
+
+            transition:
+                width 0.5s ease;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    #22c55e,
+                    #84cc16
+                );
+
+        }
+
+
+        .barra.baixo {
+
+            background:
+                linear-gradient(
+                    90deg,
+                    #f59e0b,
+                    #ef4444
+                );
+
+        }
+
+
+        /* =====================================================
+           ALERTA
+        ===================================================== */
+
+        .alerta {
+
+            margin-top: 18px;
+
+            padding: 15px;
+
+            border-radius: 12px;
+
+            background: #1f2937;
+
+            color: #94a3b8;
+
+            text-align: center;
+
+            font-weight: bold;
+
+        }
+
+
+        .alerta.ativo {
+
+            background: #7f1d1d;
+
+            color: white;
+
+            box-shadow:
+                0 0 20px
+                rgba(239,68,68,0.5);
+
+        }
+
+
+        /* =====================================================
+           LED
+        ===================================================== */
+
+        .led-area {
+
+            text-align: center;
+
+        }
+
 
         .led {
-            width: 90px;
-            height: 90px;
+
+            width: 130px;
+
+            height: 130px;
+
             border-radius: 50%;
-            background: #334155;
-            margin: 20px auto;
-            box-shadow: 0 0 10px rgba(0,0,0,0.4);
-            transition: 0.3s;
-        }
 
-        .led.on {
-            background: #ef4444;
+            margin: 10px auto 20px;
+
+            background: #374151;
+
+            border:
+                8px solid
+                #1f2937;
+
             box-shadow:
-                0 0 15px #ef4444,
-                0 0 35px #ef4444,
-                0 0 60px #ef4444;
+                inset 0 0 20px
+                rgba(0,0,0,0.7);
+
+            transition:
+                0.3s;
+
         }
 
-        .led-status {
-            font-size: 24px;
+
+        .led.ligado {
+
+            background: #22c55e;
+
+            box-shadow:
+
+                0 0 20px #22c55e,
+
+                0 0 50px #22c55e,
+
+                0 0 100px
+                rgba(34,197,94,0.5);
+
+        }
+
+
+        .status-led {
+
+            font-size: 28px;
+
             font-weight: bold;
+
         }
 
-        /* BOTÕES */
 
-        .buttons {
+        .status-led.on {
+
+            color: #22c55e;
+
+        }
+
+
+        .status-led.off {
+
+            color: #ef4444;
+
+        }
+
+
+        /* =====================================================
+           BOTÕES
+        ===================================================== */
+
+        .botoes {
+
             display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
+
+            gap: 12px;
+
+            margin-top: 25px;
+
         }
+
 
         button {
+
+            flex: 1;
+
+            padding: 16px;
+
             border: none;
-            border-radius: 10px;
-            padding: 14px 30px;
+
+            border-radius: 12px;
+
+            color: white;
+
             font-size: 17px;
+
             font-weight: bold;
+
             cursor: pointer;
-            transition: 0.2s;
+
+            transition:
+                transform 0.2s,
+                opacity 0.2s;
+
         }
+
 
         button:hover {
-            transform: scale(1.04);
+
+            transform:
+                translateY(-2px);
+
         }
 
-        .btn-on {
-            background: #22c55e;
-            color: white;
+
+        button:active {
+
+            transform:
+                scale(0.97);
+
         }
 
-        .btn-off {
-            background: #ef4444;
-            color: white;
+
+        .btn-ligar {
+
+            background: #16a34a;
+
         }
 
-        /* LOG */
 
-        .log {
-            background: #020617;
-            border-radius: 15px;
-            padding: 20px;
+        .btn-desligar {
+
+            background: #dc2626;
+
         }
 
-        .log h3 {
-            margin-bottom: 12px;
+
+        /* =====================================================
+           INFORMAÇÕES
+        ===================================================== */
+
+        .informacoes {
+
+            margin-top: 20px;
+
         }
 
-        #log {
-            height: 150px;
-            overflow-y: auto;
+
+        .linha {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            padding: 12px 0;
+
+            border-bottom:
+                1px solid
+                #334155;
+
+        }
+
+
+        .linha:last-child {
+
+            border-bottom: none;
+
+        }
+
+
+        .nome {
+
             color: #94a3b8;
-            font-family: monospace;
-            font-size: 13px;
+
         }
 
-        /* RESPONSIVO */
 
-        @media (max-width: 700px) {
+        .valor {
+
+            font-weight: bold;
+
+        }
+
+
+        /* =====================================================
+           RODAPÉ
+        ===================================================== */
+
+        footer {
+
+            text-align: center;
+
+            color: #64748b;
+
+            margin-top: 30px;
+
+            font-size: 14px;
+
+        }
+
+
+        /* =====================================================
+           CELULAR
+        ===================================================== */
+
+        @media (max-width: 600px) {
 
             body {
+
                 padding: 15px;
+
             }
 
-            .cards {
-                grid-template-columns: 1fr;
-            }
 
             header h1 {
-                font-size: 25px;
+
+                font-size: 30px;
+
             }
 
-            .buttons {
+
+            .valor-distancia {
+
+                font-size: 45px;
+
+            }
+
+
+            .valor-nivel {
+
+                font-size: 50px;
+
+            }
+
+
+            .botoes {
+
                 flex-direction: column;
-            }
 
-            button {
-                width: 100%;
             }
 
         }
@@ -252,131 +588,258 @@
 
 </head>
 
+
 <body>
+
 
 <div class="container">
 
+
+    <!-- =====================================================
+         CABEÇALHO
+    ====================================================== -->
+
     <header>
 
-        <h1>💧 Monitor de Água</h1>
+        <h1>
+            ESP-MAX
+        </h1>
 
         <p>
-            ESP32 + JSN-SR04T + HiveMQ
+            Monitoramento do reservatório
         </p>
 
-    </header>
 
-
-    <!-- STATUS MQTT -->
-
-    <div class="connection">
-
-        <div class="connection-status">
+        <div class="conexao">
 
             <div
-                id="statusDot"
-                class="status-dot">
+                id="bolinha"
+                class="bolinha">
             </div>
 
-            <span id="connectionText">
-                Desconectado
+            <span id="statusConexao">
+                Conectando ao HiveMQ...
             </span>
 
         </div>
 
-        <span>
-            MQTT / WSS
-        </span>
-
-    </div>
+    </header>
 
 
-    <!-- CARDS -->
+    <!-- =====================================================
+         CARDS
+    ====================================================== -->
 
-    <div class="cards">
-
-        <div class="card">
-
-            <h2>Distância</h2>
-
-            <div>
-
-                <span
-                    id="distance"
-                    class="value">
-                    -- 
-                </span>
-
-                <span class="unit">
-                    cm
-                </span>
-
-            </div>
-
-        </div>
+    <div class="grid">
 
 
-        <div class="card">
+        <!-- =================================================
+             DISTÂNCIA
+        ================================================== -->
 
-            <h2>Nível</h2>
+        <div class="card distancia">
 
-            <div>
-
-                <span
-                    id="percentage"
-                    class="value">
-                    --
-                </span>
-
-                <span class="unit">
-                    %
-                </span>
-
-            </div>
-
-        </div>
-
-
-        <div class="card">
-
-            <h2>LED GPIO 2</h2>
-
-            <div>
-
-                <span
-                    id="ledText"
-                    class="value">
-                    OFF
-                </span>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- BARRA DE NIVEL -->
-
-    <div class="level-card">
-
-        <div class="level-header">
-
-            <strong>
-                Nível do reservatório
-            </strong>
-
-            <strong id="percentageBar">
-                0%
-            </strong>
-
-        </div>
-
-        <div class="progress">
+            <h2>
+                📏 Distância do sensor
+            </h2>
 
             <div
-                id="progressBar"
-                class="progress-bar">
+                id="distancia"
+                class="valor-distancia">
+
+                ---
+
+            </div>
+
+            <div class="unidade">
+                centímetros
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             NÍVEL
+        ================================================== -->
+
+        <div class="card nivel">
+
+            <h2>
+                📊 Nível do reservatório
+            </h2>
+
+
+            <div
+                id="nivel"
+                class="valor-nivel">
+
+                --%
+
+            </div>
+
+
+            <div class="barra-container">
+
+                <div
+                    id="barra"
+                    class="barra">
+                </div>
+
+            </div>
+
+
+            <div
+                id="alerta"
+                class="alerta">
+
+                Nível normal
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             LED
+        ================================================== -->
+
+        <div class="card led-area">
+
+            <h2>
+                💡 LED GPIO 2
+            </h2>
+
+
+            <div
+                id="led"
+                class="led">
+            </div>
+
+
+            <div
+                id="statusLED"
+                class="status-led off">
+
+                DESLIGADO
+
+            </div>
+
+
+            <div class="botoes">
+
+                <button
+                    class="btn-ligar"
+                    onclick="ligarLED()">
+
+                    LIGAR
+
+                </button>
+
+
+                <button
+                    class="btn-desligar"
+                    onclick="desligarLED()">
+
+                    DESLIGAR
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             INFORMAÇÕES
+        ================================================== -->
+
+        <div class="card">
+
+            <h2>
+                ℹ️ Informações
+            </h2>
+
+
+            <div class="informacoes">
+
+
+                <div class="linha">
+
+                    <span class="nome">
+                        Dispositivo
+                    </span>
+
+                    <span class="valor">
+                        ESP-MAX
+                    </span>
+
+                </div>
+
+
+                <div class="linha">
+
+                    <span class="nome">
+                        Sensor
+                    </span>
+
+                    <span class="valor">
+                        JSN-SR04T
+                    </span>
+
+                </div>
+
+
+                <div class="linha">
+
+                    <span class="nome">
+                        TRIG
+                    </span>
+
+                    <span class="valor">
+                        GPIO 5
+                    </span>
+
+                </div>
+
+
+                <div class="linha">
+
+                    <span class="nome">
+                        ECHO
+                    </span>
+
+                    <span class="valor">
+                        GPIO 18
+                    </span>
+
+                </div>
+
+
+                <div class="linha">
+
+                    <span class="nome">
+                        LED
+                    </span>
+
+                    <span class="valor">
+                        GPIO 2
+                    </span>
+
+                </div>
+
+
+                <div class="linha">
+
+                    <span class="nome">
+                        Limite automático
+                    </span>
+
+                    <span class="valor">
+                        10%
+                    </span>
+
+                </div>
+
             </div>
 
         </div>
@@ -384,309 +847,227 @@
     </div>
 
 
-    <!-- CONTROLE LED -->
+    <footer>
 
-    <div class="led-card">
+        ESP32 • JSN-SR04T • MQTT • HiveMQ
 
-        <h2>
-            Controle do LED
-        </h2>
+    </footer>
 
-        <div
-            id="led"
-            class="led">
-        </div>
-
-        <div
-            id="ledStatus"
-            class="led-status">
-
-            Desligado
-
-        </div>
-
-
-        <div class="buttons">
-
-            <button
-                class="btn-on"
-                onclick="ligarLED()">
-
-                LIGAR LED
-
-            </button>
-
-
-            <button
-                class="btn-off"
-                onclick="desligarLED()">
-
-                DESLIGAR LED
-
-            </button>
-
-        </div>
-
-    </div>
-
-
-    <!-- LOG -->
-
-    <div class="log">
-
-        <h3>
-            Comunicação
-        </h3>
-
-        <div id="log"></div>
-
-    </div>
 
 </div>
 
 
-<!-- MQTT -->
-
-<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-
 
 <script>
 
-    // =====================================================
-    // CONFIGURAÇÃO HIVEMQ
-    // =====================================================
 
-    const MQTT_HOST =
-        "wss://d7fd89e5e9b44d38b2a248bb67d9e159.s1.eu.hivemq.cloud:8884/mqtt";
+// ============================================================
+//                  CONFIGURAÇÃO HIVEMQ
+// ============================================================
 
-
-    const MQTT_USER =
-        "ESP-Agua";
+const MQTT_HOST =
+    "wss://d7fd89e5e9b44d38b2a248bb67d9e159.s1.eu.hivemq.cloud:8884/mqtt";
 
 
-    const MQTT_PASSWORD =
-        "02010712";
+const MQTT_USERNAME =
+    "ESP-MAX";
 
 
-    // =====================================================
-    // TOPICOS
-    // =====================================================
-
-    const TOPICO_DISTANCIA =
-        "esp32/agua/distancia";
+const MQTT_PASSWORD =
+    "21072010";
 
 
-    const TOPICO_PERCENTUAL =
-        "esp32/agua/percentual";
+// ============================================================
+//                  TÓPICOS
+// ============================================================
+
+const TOPICO_COMANDO_LED =
+    "ESP-MAX/led2/comando";
 
 
-    const TOPICO_LED =
-        "esp32/agua/led";
+const TOPICO_STATUS_LED =
+    "ESP-MAX/led2/status";
 
 
-    const TOPICO_COMANDO_LED =
-        "esp32/agua/led/comando";
+const TOPICO_DISTANCIA =
+    "ESP-MAX/sensor/distancia";
 
 
-    // =====================================================
-    // ELEMENTOS
-    // =====================================================
-
-    const distanceElement =
-        document.getElementById("distance");
+const TOPICO_NIVEL =
+    "ESP-MAX/sensor/nivel";
 
 
-    const percentageElement =
-        document.getElementById("percentage");
+const TOPICO_STATUS_SENSOR =
+    "ESP-MAX/sensor/status";
 
 
-    const percentageBar =
-        document.getElementById("percentageBar");
+// ============================================================
+//                  ELEMENTOS
+// ============================================================
+
+const distanciaElemento =
+    document.getElementById(
+        "distancia"
+    );
 
 
-    const progressBar =
-        document.getElementById("progressBar");
+const nivelElemento =
+    document.getElementById(
+        "nivel"
+    );
 
 
-    const led =
-        document.getElementById("led");
+const barra =
+    document.getElementById(
+        "barra"
+    );
 
 
-    const ledText =
-        document.getElementById("ledText");
+const alerta =
+    document.getElementById(
+        "alerta"
+    );
 
 
-    const ledStatus =
-        document.getElementById("ledStatus");
+const led =
+    document.getElementById(
+        "led"
+    );
 
 
-    const statusDot =
-        document.getElementById("statusDot");
+const statusLED =
+    document.getElementById(
+        "statusLED"
+    );
 
 
-    const connectionText =
-        document.getElementById("connectionText");
+const bolinha =
+    document.getElementById(
+        "bolinha"
+    );
 
 
-    const logElement =
-        document.getElementById("log");
+const statusConexao =
+    document.getElementById(
+        "statusConexao"
+    );
 
 
-    // =====================================================
-    // LOG
-    // =====================================================
+// ============================================================
+//                  CLIENT MQTT
+// ============================================================
 
-    function adicionarLog(mensagem) {
-
-        const hora =
-            new Date().toLocaleTimeString();
-
-        logElement.innerHTML +=
-            `[${hora}] ${mensagem}<br>`;
-
-        logElement.scrollTop =
-            logElement.scrollHeight;
-    }
+const clientID =
+    "WEB-ESP-MAX-" +
+    Math.random()
+    .toString(16)
+    .substring(2);
 
 
-    // =====================================================
-    // CONECTAR MQTT
-    // =====================================================
-
-    const client = mqtt.connect(
+const client =
+    mqtt.connect(
         MQTT_HOST,
         {
 
-            username: MQTT_USER,
-
-            password: MQTT_PASSWORD,
-
             clientId:
-                "WEB-" +
-                Math.random()
-                    .toString(16)
-                    .substring(2),
+                clientID,
 
-            clean: true,
+            username:
+                MQTT_USERNAME,
 
-            reconnectPeriod: 3000,
+            password:
+                MQTT_PASSWORD,
 
-            connectTimeout: 10000
+            clean:
+                true,
+
+            reconnectPeriod:
+                3000,
+
+            connectTimeout:
+                10000
 
         }
     );
 
 
-    // =====================================================
-    // CONECTADO
-    // =====================================================
+// ============================================================
+//                  CONECTADO
+// ============================================================
 
-    client.on("connect", function() {
+client.on(
+    "connect",
+    function() {
 
-        console.log("MQTT conectado");
-
-        statusDot.classList.add("connected");
-
-        connectionText.innerText =
-            "Conectado ao HiveMQ";
-
-        adicionarLog(
-            "Conectado ao HiveMQ."
+        console.log(
+            "HiveMQ conectado!"
         );
 
 
-        // ASSINAR TOPICOS
+        bolinha.classList.add(
+            "online"
+        );
+
+
+        statusConexao.textContent =
+            "Conectado ao HiveMQ";
+
+
+        // Assina todos os tópicos
+
+        client.subscribe(
+            TOPICO_STATUS_LED
+        );
+
 
         client.subscribe(
             TOPICO_DISTANCIA
         );
 
-        client.subscribe(
-            TOPICO_PERCENTUAL
-        );
 
         client.subscribe(
-            TOPICO_LED
+            TOPICO_NIVEL
         );
 
 
-        adicionarLog(
-            "Inscrito nos tópicos do ESP32."
+        client.subscribe(
+            TOPICO_STATUS_SENSOR
         );
 
-    });
+    }
+);
 
 
-    // =====================================================
-    // RECEBER MENSAGENS
-    // =====================================================
+// ============================================================
+//                  RECEBER MQTT
+// ============================================================
 
-    client.on("message", function(topic, message) {
+client.on(
+    "message",
+    function(
+        topic,
+        message
+    ) {
 
         const valor =
             message.toString();
 
 
-        adicionarLog(
-            topic + " → " + valor
+        console.log(
+            "MQTT:",
+            topic,
+            valor
         );
 
 
-        // DISTANCIA
+        // ----------------------------------------------------
+        // STATUS LED
+        // ----------------------------------------------------
 
-        if (topic === TOPICO_DISTANCIA) {
-
-            const distancia =
-                parseFloat(valor);
-
-            if (!isNaN(distancia)) {
-
-                distanceElement.innerText =
-                    distancia.toFixed(2);
-
-            }
-
-        }
-
-
-        // PORCENTAGEM
-
-        if (topic === TOPICO_PERCENTUAL) {
-
-            let porcentagem =
-                parseInt(valor);
-
-            if (!isNaN(porcentagem)) {
-
-                porcentagem =
-                    Math.max(
-                        0,
-                        Math.min(
-                            100,
-                            porcentagem
-                        )
-                    );
-
-
-                percentageElement.innerText =
-                    porcentagem;
-
-
-                percentageBar.innerText =
-                    porcentagem + "%";
-
-
-                progressBar.style.width =
-                    porcentagem + "%";
-
-            }
-
-        }
-
-
-        // LED
-
-        if (topic === TOPICO_LED) {
+        if (
+            topic ===
+            TOPICO_STATUS_LED
+        ) {
 
             atualizarLED(
                 valor
@@ -694,155 +1075,355 @@
 
         }
 
-    });
 
+        // ----------------------------------------------------
+        // DISTÂNCIA
+        // ----------------------------------------------------
 
-    // =====================================================
-    // ATUALIZAR LED
-    // =====================================================
-
-    function atualizarLED(valor) {
-
-        const estado =
-            valor.toUpperCase();
-
-
-        if (
-            estado === "ON" ||
-            estado === "LIGADO"
+        else if (
+            topic ===
+            TOPICO_DISTANCIA
         ) {
 
-            led.classList.add("on");
+            const numero =
+                parseFloat(valor);
 
-            ledText.innerText =
-                "ON";
 
-            ledStatus.innerText =
-                "Ligado";
+            if (!isNaN(numero)) {
+
+                distanciaElemento.textContent =
+                    numero.toFixed(1);
+
+            }
 
         }
 
-        else {
 
-            led.classList.remove("on");
+        // ----------------------------------------------------
+        // NÍVEL
+        // ----------------------------------------------------
 
-            ledText.innerText =
-                "OFF";
+        else if (
+            topic ===
+            TOPICO_NIVEL
+        ) {
 
-            ledStatus.innerText =
-                "Desligado";
+            const numero =
+                parseInt(valor);
+
+
+            if (!isNaN(numero)) {
+
+                atualizarNivel(
+                    numero
+                );
+
+            }
+
+        }
+
+
+        // ----------------------------------------------------
+        // STATUS COMPLETO
+        // ----------------------------------------------------
+
+        else if (
+            topic ===
+            TOPICO_STATUS_SENSOR
+        ) {
+
+            try {
+
+                const dados =
+                    JSON.parse(valor);
+
+
+                if (
+                    dados.distancia !== undefined
+                ) {
+
+                    distanciaElemento.textContent =
+                        Number(
+                            dados.distancia
+                        ).toFixed(1);
+
+                }
+
+
+                if (
+                    dados.nivel !== undefined
+                ) {
+
+                    atualizarNivel(
+                        Number(
+                            dados.nivel
+                        )
+                    );
+
+                }
+
+
+                if (
+                    dados.led !== undefined
+                ) {
+
+                    atualizarLED(
+                        dados.led
+                        ? "ON"
+                        : "OFF"
+                    );
+
+                }
+
+            }
+
+            catch (erro) {
+
+                console.error(
+                    "Erro JSON:",
+                    erro
+                );
+
+            }
 
         }
 
     }
+);
 
 
-    // =====================================================
-    // LIGAR LED
-    // =====================================================
+// ============================================================
+//                  ATUALIZAR NÍVEL
+// ============================================================
 
-    function ligarLED() {
+function atualizarNivel(
+    valor
+) {
 
-        if (!client.connected) {
-
-            alert(
-                "O site não está conectado ao HiveMQ."
-            );
-
-            return;
-        }
-
-
-        client.publish(
-            TOPICO_COMANDO_LED,
-            "ON"
+    valor =
+        Math.max(
+            0,
+            Math.min(
+                100,
+                valor
+            )
         );
 
 
-        adicionarLog(
-            "Comando enviado: LIGAR LED"
-        );
-
-    }
+    nivelElemento.textContent =
+        valor + "%";
 
 
-    // =====================================================
-    // DESLIGAR LED
-    // =====================================================
-
-    function desligarLED() {
-
-        if (!client.connected) {
-
-            alert(
-                "O site não está conectado ao HiveMQ."
-            );
-
-            return;
-        }
+    barra.style.width =
+        valor + "%";
 
 
-        client.publish(
-            TOPICO_COMANDO_LED,
-            "OFF"
+    // --------------------------------------------------------
+    // ALERTA
+    // --------------------------------------------------------
+
+    if (
+        valor <= 10
+    ) {
+
+        alerta.classList.add(
+            "ativo"
         );
 
 
-        adicionarLog(
-            "Comando enviado: DESLIGAR LED"
+        alerta.textContent =
+            "⚠️ NÍVEL BAIXO — LED AUTOMÁTICO ATIVADO";
+
+
+        barra.classList.add(
+            "baixo"
         );
 
     }
 
+    else {
 
-    // =====================================================
-    // ERRO
-    // =====================================================
-
-    client.on("error", function(error) {
-
-        console.error(error);
-
-        adicionarLog(
-            "Erro MQTT: " + error.message
+        alerta.classList.remove(
+            "ativo"
         );
 
-    });
+
+        alerta.textContent =
+            "Nível normal";
 
 
-    // =====================================================
-    // DESCONECTADO
-    // =====================================================
-
-    client.on("close", function() {
-
-        statusDot.classList.remove(
-            "connected"
+        barra.classList.remove(
+            "baixo"
         );
 
-        connectionText.innerText =
-            "Desconectado";
+    }
 
-        adicionarLog(
-            "MQTT desconectado. Tentando reconectar..."
+}
+
+
+// ============================================================
+//                  ATUALIZAR LED
+// ============================================================
+
+function atualizarLED(
+    estado
+) {
+
+    estado =
+        estado
+        .toString()
+        .toUpperCase();
+
+
+    if (
+        estado === "ON"
+    ) {
+
+        led.classList.add(
+            "ligado"
         );
 
-    });
+
+        statusLED.textContent =
+            "LIGADO";
 
 
-    // =====================================================
-    // OFFLINE
-    // =====================================================
+        statusLED.className =
+            "status-led on";
 
-    client.on("offline", function() {
+    }
 
-        adicionarLog(
-            "Cliente MQTT offline."
+    else {
+
+        led.classList.remove(
+            "ligado"
         );
 
-    });
+
+        statusLED.textContent =
+            "DESLIGADO";
+
+
+        statusLED.className =
+            "status-led off";
+
+    }
+
+}
+
+
+// ============================================================
+//                  LIGAR LED
+// ============================================================
+
+function ligarLED() {
+
+    if (
+        !client.connected
+    ) {
+
+        alert(
+            "Site desconectado do HiveMQ."
+        );
+
+        return;
+
+    }
+
+
+    client.publish(
+        TOPICO_COMANDO_LED,
+        "ON"
+    );
+
+}
+
+
+// ============================================================
+//                  DESLIGAR LED
+// ============================================================
+
+function desligarLED() {
+
+    if (
+        !client.connected
+    ) {
+
+        alert(
+            "Site desconectado do HiveMQ."
+        );
+
+        return;
+
+    }
+
+
+    client.publish(
+        TOPICO_COMANDO_LED,
+        "OFF"
+    );
+
+}
+
+
+// ============================================================
+//                  ERRO
+// ============================================================
+
+client.on(
+    "error",
+    function(erro) {
+
+        console.error(
+            "Erro MQTT:",
+            erro
+        );
+
+
+        statusConexao.textContent =
+            "Erro na conexão MQTT";
+
+    }
+);
+
+
+// ============================================================
+//                  DESCONECTADO
+// ============================================================
+
+client.on(
+    "close",
+    function() {
+
+        bolinha.classList.remove(
+            "online"
+        );
+
+
+        statusConexao.textContent =
+            "Desconectado — reconectando...";
+
+    }
+);
+
+
+// ============================================================
+//                  RECONEXÃO
+// ============================================================
+
+client.on(
+    "reconnect",
+    function() {
+
+        statusConexao.textContent =
+            "Reconectando ao HiveMQ...";
+
+    }
+);
+
 
 </script>
+
 
 </body>
 
