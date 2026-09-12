@@ -1,0 +1,448 @@
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <PubSubClient.h>
+
+// =====================================================
+// WIFI
+// =====================================================
+
+const char* WIFI_SSID = "MOB-ROBOTICA SUSTENTAVEL";
+const char* WIFI_PASSWORD = "robotica3007";
+
+// =====================================================
+// HIVEMQ CLOUD
+// =====================================================
+
+const char* MQTT_SERVER = "d7fd89e5e9b44d38b2a248bb67d9e159.s1.eu.hivemq.cloud";
+const int MQTT_PORT = 8883;
+
+const char* MQTT_USER = "ESP-Agua";
+const char* MQTT_PASSWORD = "02010712";
+
+// =====================================================
+// MQTT TOPICOS
+// =====================================================
+
+const char* TOPICO_DISTANCIA = "esp32/agua/distancia";
+const char* TOPICO_PERCENTUAL = "esp32/agua/percentual";
+const char* TOPICO_LED = "esp32/agua/led";
+const char* TOPICO_COMANDO_LED = "esp32/agua/led/comando";
+
+// =====================================================
+// PINOS
+// =====================================================
+
+#define TRIG_PIN 5
+#define ECHO_PIN 18
+#define LED_PIN 2
+
+// =====================================================
+// OBJETOS
+// =====================================================
+
+WiFiClientSecure espClient;
+PubSubClient mqttClient(espClient);
+
+// =====================================================
+// VARIAVEIS
+// =====================================================
+
+unsigned long ultimoEnvio = 0;
+
+const unsigned long INTERVALO_MEDICAO = 1000;
+
+// =====================================================
+// CONECTAR WIFI
+// =====================================================
+
+void conectarWiFi() {
+
+  Serial.println();
+  Serial.println("=================================");
+  Serial.println("Conectando ao Wi-Fi...");
+  Serial.println("=================================");
+
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+  while (WiFi.status() != WL_CONNECTED) {
+
+    delay(500);
+
+    Serial.print(".");
+  }
+
+  Serial.println();
+  Serial.println("Wi-Fi conectado!");
+
+  Serial.print("IP do ESP32: ");
+  Serial.println(WiFi.localIP());
+
+  Serial.print("Sinal Wi-Fi: ");
+  Serial.print(WiFi.RSSI());
+  Serial.println(" dBm");
+}
+
+// =====================================================
+// CALLBACK MQTT
+// =====================================================
+
+void callback(char* topic, byte* payload, unsigned int length) {
+
+  String mensagem = "";
+
+  for (unsigned int i = 0; i < length; i++) {
+    mensagem += (char)payload[i];
+  }
+
+  Serial.println();
+  Serial.println("Mensagem MQTT recebida:");
+
+  Serial.print("Topico: ");
+  Serial.println(topic);
+
+  Serial.print("Mensagem: ");
+  Serial.println(mensagem);
+
+  // ===============================================
+  // COMANDO DO LED
+  // ===============================================
+
+  if (String(topic) == TOPICO_COMANDO_LED) {
+
+    if (mensagem == "ON" || mensagem == "LIGAR") {
+
+      digitalWrite(LED_PIN, HIGH);
+
+      Serial.println("LED ligado por comando MQTT");
+
+      mqttClient.publish(
+        TOPICO_LED,
+        "ON",
+        true
+      );
+    }
+
+    else if (mensagem == "OFF" || mensagem == "DESLIGAR") {
+
+      digitalWrite(LED_PIN, LOW);
+
+      Serial.println("LED desligado por comando MQTT");
+
+      mqttClient.publish(
+        TOPICO_LED,
+        "OFF",
+        true
+      );
+    }
+  }
+}
+
+// =====================================================
+// CONECTAR MQTT
+// =====================================================
+
+void conectarMQTT() {
+
+  while (!mqttClient.connected()) {
+
+    Serial.println();
+    Serial.println("Conectando ao HiveMQ...");
+
+    String clientID = "ESP32-Agua-";
+
+    clientID += String(random(0xffff), HEX);
+
+    if (mqttClient.connect(
+          clientID.c_str(),
+          MQTT_USER,
+          MQTT_PASSWORD
+        )) {
+
+      Serial.println("MQTT conectado ao HiveMQ!");
+
+      // Assina o tópico de comando
+      mqttClient.subscribe(TOPICO_COMANDO_LED);
+
+      Serial.println("Topico de comando inscrito:");
+
+      Serial.println(TOPICO_COMANDO_LED);
+
+      // Publica estado inicial
+      mqttClient.publish(
+        TOPICO_LED,
+        digitalRead(LED_PIN) ? "ON" : "OFF",
+        true
+      );
+
+    } else {
+
+      Serial.print("Falha MQTT. Codigo: ");
+      Serial.println(mqttClient.state());
+
+      Serial.println("Tentando novamente em 5 segundos...");
+
+      delay(5000);
+    }
+  }
+}
+
+// =====================================================
+// MEDIR DISTANCIA
+// =====================================================
+
+float medirDistancia() {
+
+  // Garante TRIG desligado
+  digitalWrite(TRIG_PIN, LOW);
+
+  delayMicroseconds(5);
+
+  // Pulso de 10 microssegundos
+  digitalWrite(TRIG_PIN, HIGH);
+
+  delayMicroseconds(10);
+
+  digitalWrite(TRIG_PIN, LOW);
+
+  // Mede o tempo do ECHO
+  unsigned long duracao = pulseIn(
+    ECHO_PIN,
+    HIGH,
+    40000
+  );
+
+  // Se não recebeu resposta
+  if (duracao == 0) {
+
+    return -1;
+  }
+
+  // Velocidade do som
+  float distancia = duracao * 0.0343 / 2.0;
+
+  return distancia;
+}
+
+// =====================================================
+// PUBLICAR DADOS
+// =====================================================
+
+void publicarDados(float distancia, int percentual) {
+
+  char distanciaTexto[20];
+  char percentualTexto[20];
+
+  dtostrf(
+    distancia,
+    1,
+    2,
+    distanciaTexto
+  );
+
+  sprintf(
+    percentualTexto,
+    "%d",
+    percentual
+  );
+
+  // ===============================================
+  // DISTANCIA
+  // ===============================================
+
+  mqttClient.publish(
+    TOPICO_DISTANCIA,
+    distanciaTexto,
+    true
+  );
+
+  // ===============================================
+  // PORCENTAGEM
+  // ===============================================
+
+  mqttClient.publish(
+    TOPICO_PERCENTUAL,
+    percentualTexto,
+    true
+  );
+
+  // ===============================================
+  // ESTADO LED
+  // ===============================================
+
+  const char* estadoLED;
+
+  if (digitalRead(LED_PIN) == HIGH) {
+    estadoLED = "ON";
+  } else {
+    estadoLED = "OFF";
+  }
+
+  mqttClient.publish(
+    TOPICO_LED,
+    estadoLED,
+    true
+  );
+
+  // ===============================================
+  // MONITOR SERIAL
+  // ===============================================
+
+  Serial.println();
+  Serial.println("---------------------------------");
+
+  Serial.print("Distancia: ");
+  Serial.print(distancia);
+  Serial.println(" cm");
+
+  Serial.print("Nivel: ");
+  Serial.print(percentual);
+  Serial.println("%");
+
+  Serial.print("LED: ");
+  Serial.println(estadoLED);
+
+  Serial.println("---------------------------------");
+}
+
+// =====================================================
+// SETUP
+// =====================================================
+
+void setup() {
+
+  Serial.begin(115200);
+
+  delay(1000);
+
+  Serial.println();
+  Serial.println("=================================");
+  Serial.println("ESP32 - SENSOR DE NIVEL DE AGUA");
+  Serial.println("JSN-SR04T V3.3");
+  Serial.println("=================================");
+
+  // Configuração dos pinos
+  pinMode(TRIG_PIN, OUTPUT);
+
+  pinMode(ECHO_PIN, INPUT);
+
+  pinMode(LED_PIN, OUTPUT);
+
+  // LED inicialmente desligado
+  digitalWrite(LED_PIN, LOW);
+
+  // Conecta Wi-Fi
+  conectarWiFi();
+
+  // =================================================
+  // TLS
+  // =================================================
+
+  // Para teste no HiveMQ Cloud.
+  // Usa conexão TLS, mas não valida o certificado CA.
+  espClient.setInsecure();
+
+  // =================================================
+  // MQTT
+  // =================================================
+
+  mqttClient.setServer(
+    MQTT_SERVER,
+    MQTT_PORT
+  );
+
+  mqttClient.setCallback(callback);
+
+  // =================================================
+  // CONECTAR MQTT
+  // =================================================
+
+  conectarMQTT();
+}
+
+// =====================================================
+// LOOP
+// =====================================================
+
+void loop() {
+
+  // =================================================
+  // VERIFICAR WIFI
+  // =================================================
+
+  if (WiFi.status() != WL_CONNECTED) {
+
+    Serial.println("Wi-Fi desconectado!");
+
+    conectarWiFi();
+  }
+
+  // =================================================
+  // VERIFICAR MQTT
+  // =================================================
+
+  if (!mqttClient.connected()) {
+
+    conectarMQTT();
+  }
+
+  mqttClient.loop();
+
+  // =================================================
+  // MEDIÇÃO
+  // =================================================
+
+  if (millis() - ultimoEnvio >= INTERVALO_MEDICAO) {
+
+    ultimoEnvio = millis();
+
+    float distancia = medirDistancia();
+
+    if (distancia < 0) {
+
+      Serial.println("Erro: sensor sem resposta!");
+
+      return;
+    }
+
+    // =================================================
+    // CALCULAR PORCENTAGEM
+    // =================================================
+
+    int percentual = (int)((distancia / 100.0) * 100.0);
+
+    // Limita entre 0 e 100
+    percentual = constrain(
+      percentual,
+      0,
+      100
+    );
+
+    // =================================================
+    // LED AUTOMATICO
+    // =================================================
+
+    if (distancia <= 10.0) {
+
+      digitalWrite(
+        LED_PIN,
+        HIGH
+      );
+
+    } else {
+
+      digitalWrite(
+        LED_PIN,
+        LOW
+      );
+    }
+
+    // =================================================
+    // PUBLICAR
+    // =================================================
+
+    publicarDados(
+      distancia,
+      percentual
+    );
+  }
+}
